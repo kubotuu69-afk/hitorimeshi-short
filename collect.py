@@ -6,7 +6,11 @@ queries=['一人暮らし 時短 レシピ shorts','一人前 簡単 料理 shor
 after=(datetime.datetime.now(datetime.timezone.utc)-datetime.timedelta(days=14)).isoformat().replace('+00:00','Z')
 for q in queries:
  p=dict(part='snippet',q=q,type='video',order='date',publishedAfter=after,videoDuration='short',videoEmbeddable='true',maxResults=30,regionCode='JP',relevanceLanguage='ja',key=key)
- r=requests.get('https://www.googleapis.com/youtube/v3/search',params=p,timeout=30);r.raise_for_status()
+ try:
+  r=requests.get('https://www.googleapis.com/youtube/v3/search',params=p,timeout=30);r.raise_for_status()
+ except requests.RequestException as exc:
+  status=exc.response.status_code if exc.response is not None else 'network error'
+  raise SystemExit(f'YouTube API request failed ({status}). Check API configuration or quota.') from None
  for v in r.json().get('items',[]):
   id=v.get('id',{}).get('videoId');s=v.get('snippet',{});title=s.get('title','');desc=s.get('description','')
   if not id or id in found or not re.search('料理|レシピ|自炊|ごはん|ご飯|飯|丼|パスタ|節約|時短|おかず',title+' '+desc):continue
